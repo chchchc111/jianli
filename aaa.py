@@ -1,91 +1,87 @@
-# resume_app.py
 import streamlit as st
-from datetime import date
 
-# ---------- 页面配置 ----------
-st.set_page_config(page_title="个人简历生成器", layout="wide")
-st.title("📄 个人简历生成器")
+# 页面基础配置
+st.set_page_config(page_title="个人简历生成器", page_icon="", layout="wide")
+st.title("个人简历生成器")
+st.caption("使用Streamlit创建您的个性化简历")
 
-# ---------- 初始化会话状态 ----------
-# 通用字段先全部给空字符串
-fields = ["name", "phone", "email", "birth", "edu", "salary",
-          "contact_time", "language", "skills", "intro", "photo"]
-for f in fields:
-    if f not in st.session_state:
-        st.session_state[f] = "" if f != "skills" else []
+# 分割为左右两列，比例与参考页匹配
+col_form, col_preview = st.columns([1, 2], gap="medium")
 
-# 单独给 gender 赋合法初值，避免 radio 报错
-if "gender" not in st.session_state:
-    st.session_state.gender = "男"
-
-# ---------- 左右分栏 ----------
-left, right = st.columns([1, 1])
-
-# ================= 左侧：实时填写（无表单） =================
-with left:
-    st.header("① 填写信息")
-    st.text_input("姓名", key="name")
-    st.radio("性别", ["男", "女", "其他"], horizontal=True, key="gender")
-    st.text_input("电话", key="phone")
-    st.text_input("邮箱", key="email")
-    st.date_input("出生日期", value=date(1990, 1, 1), key="birth")
-    st.selectbox("学历", ["高中", "专科", "本科", "硕士", "博士"], key="edu")
-    st.slider("工作经验（年）", 0, 30, 0, key="exp")
-    st.text_input("期望薪资（如 10k-15k）", key="salary")
-    st.time_input("每日最佳联系时间", value=None, key="contact_time")
-    st.text_area("语言能力", key="language")
-    st.multiselect(
-        "技能（可多选）",
-        ["Python", "Java", "C/C++", "数据分析", "机器学习", "前端", "SQL", "Office"],
-        key="skills"
+# ---------------------- 左侧：个人信息表单 ----------------------
+with col_form:
+    st.subheader("个人信息表单")
+    # 基础信息
+    name = st.text_input("姓名", placeholder="请输入姓名")
+    position = st.text_input("职位", placeholder="请输入应聘职位")
+    phone = st.text_input("电话", placeholder="请输入联系电话")
+    email = st.text_input("邮箱", placeholder="请输入电子邮箱")
+    birthday = st.date_input("出生日期", format="YYYY/MM/DD")
+    
+    # 性别（横向显示）、学历
+    gender = st.radio("性别", ["男", "女", "其他"], horizontal=True)
+    education = st.selectbox("学历", ["高中", "大专", "本科", "硕士", "博士"], index=0)
+    
+    # 语言能力、工作经验、期望薪资
+    language = st.selectbox("语言能力", ["无", "英语四级", "英语六级", "雅思6.5+", "托福90+"], index=0)
+    work_exp = st.slider("工作经验（年）", 0, 30, 0)
+    salary = st.slider("期望薪资（元）", 10000, 50000, (10000, 20000))
+    contact_time = st.time_input("最佳联系时间")
+    
+    # 个人照片上传（按钮显示中文，核心修改）
+    photo = st.file_uploader(
+        "上传个人照片",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=False,
+        label_visibility="visible",
+        help="点击上传按钮选择照片（支持PNG/JPG/JPEG格式）"
     )
-    st.text_area("个人简介", key="intro")
-    st.file_uploader("上传个人照片（jpg/png）", type=["jpg", "jpeg", "png"], key="photo")
-
-# ================= 右侧：实时预览 =================
-with right:
-    st.header("② 简历预览")
-    # 照片
-    if st.session_state.photo:
-        st.image(st.session_state.photo, width=150)
-    else:
-        st.info("📷 暂无照片")
-
-    # 基本信息
-    st.subheader(st.session_state.name or "姓名未填")
-    st.write(f"性别：{st.session_state.gender}")
-    st.write(f"出生日期：{st.session_state.birth}")
-    st.write(f"电话：{st.session_state.phone or '未填'}")
-    st.write(f"邮箱：{st.session_state.email or '未填'}")
-    st.write(f"学历：{st.session_state.edu}")
-    st.write(f"工作经验：{st.session_state.exp} 年")
-    st.write(f"期望薪资：{st.session_state.salary or '未填'}")
-    st.write(f"最佳联系时间：{st.session_state.contact_time or '未填'}")
-    st.write(f"语言能力：{st.session_state.language or '暂无'}")
-    st.write(f"技能：{', '.join(st.session_state.skills) or '暂无'}")
-
+    # 自定义上传按钮文字的兼容写法（针对不同Streamlit版本）
+    st.markdown("""
+    <style>
+    div[data-testid="stFileUploader"] button {
+        content: "浏览文件";
+        font-size: 14px;
+    }
+    div[data-testid="stFileUploader"] span {
+        display: none;
+    }
+    div[data-testid="stFileUploader"]::after {
+        content: "点击上方区域选择照片";
+        font-size: 12px;
+        color: #666;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # 个人简介
-    st.write("---")
-    st.write("**个人简介：**")
-    st.write(st.session_state.intro or "这个人很神秘，没有留下任何介绍。")
+    intro = st.text_area("个人简介", placeholder="这个人很神秘，没有留下任何介绍...", height=100)
 
-    # 一键下载 Markdown 简历
-    md_content = "\n\n".join([
-        f"# {st.session_state.name or '姓名未填'}",
-        f"> 性别：{st.session_state.gender}  |  出生日期：{st.session_state.birth}",
-        f"> 电话：{st.session_state.phone}  |  邮箱：{st.session_state.email}",
-        f"> 学历：{st.session_state.edu}  |  工作经验：{st.session_state.exp} 年",
-        f"> 期望薪资：{st.session_state.salary}  |  最佳联系时间：{st.session_state.contact_time}",
-        "## 语言能力",
-        st.session_state.language or "暂无",
-        "## 技能",
-        ", ".join(st.session_state.skills) or "暂无",
-        "## 个人简介",
-        st.session_state.intro or "暂无"
-    ])
-    st.download_button(
-        label="📥 下载 Markdown 简历",
-        data=md_content,
-        file_name=f"{st.session_state.name or 'resume'}.md",
-        mime="text/markdown"
-    )
+# ---------------------- 右侧：简历实时预览 ----------------------
+with col_preview:
+    st.subheader("简历实时预览")
+    st.divider()  # 蓝色分割线，匹配参考页样式
+    
+    # 姓名+照片 与 核心信息 分栏
+    preview_col1, preview_col2 = st.columns([3, 2])
+    with preview_col1:
+        st.title(name if name else "未填写姓名")
+        # 照片预览
+        if photo:
+            st.image(photo, width=150, caption="个人照片")
+        st.write(f"**职位**：{position if position else '未填写'}")
+        st.write(f"**电话**：{phone if phone else '未填写'}")
+        st.write(f"**邮箱**：{email if email else '未填写'}")
+        st.write(f"**出生日期**：{birthday}")
+    
+    with preview_col2:
+        st.write(f"**性别**：{gender}")
+        st.write(f"**学历**：{education}")
+        st.write(f"**工作经验**：{work_exp}年")
+        st.write(f"**期望薪资**：{salary[0]}-{salary[1]}元")
+        st.write(f"**最佳联系时间**：{contact_time}")
+        st.write(f"**语言能力**：{language}")
+    
+    # 个人简介模块
+    st.subheader("个人简介")
+    st.write(intro if intro else "这个人很神秘，没有留下任何介绍...")
